@@ -1,3 +1,5 @@
+function max(a, b) { return a < b ? a : b}
+
 function setStyle(div, styles) {
   for (var key in styles) {
     div.style.setProperty(key, styles[key]);
@@ -54,6 +56,10 @@ screen.style.display = "flex";
 
 var hints = document.createElement("div");
 
+var buttons = document.createElement("div");
+setStyle(buttons, {display: "flex"});
+hints.appendChild(buttons);
+
 var play = document.createElement("div");
 play.innerHTML = `<h1 style="text-align: center"> Play </h1>`;
 setStyle(play, {
@@ -67,17 +73,33 @@ setStyle(play, {
 });
 play.onclick = function() {
   for (var p of players) {
-    for (let c of p.cards) {
+    for (let [i, c] of p.cards.entries()) {
       if (!c.selected) continue;
+      let actual = p.actual_hand[i];
+      if (completed[actual.color].number + 1 == actual.number) {
+        completed[actual.color].number++;
+        displayCard(completed[actual.color]);
+      } else {
+        mistakes -= 1;
+      }
+      var new_card = deck.pop();
+      actual.color = new_card.color;
+      actual.number = new_card.number;
+      displayCard(actual);
+
       c.number = null;
       c.color = null;
       c.selected = false;
       displayCard(c);
+
+      hints -= 1;
+      displayMistakesAndHints();
+      return;
     }
   }
 };
 setRaise(play);
-hints.appendChild(play);
+buttons.appendChild(play);
 
 
 var discard = document.createElement("div");
@@ -93,17 +115,33 @@ setStyle(discard, {
 });
 discard.onclick = function() {
   for (var p of players) {
-    for (let c of p.cards) {
+    for (let [i, c] of p.cards.entries()) {
       if (!c.selected) continue;
+
+      let actual = p.actual_hand[i];
+      var new_card = deck.pop();
+      actual.color = new_card.color;
+      actual.number = new_card.number;
+      displayCard(actual);
+
       c.number = null;
       c.color = null;
       c.selected = false;
       displayCard(c);
+
+      hints += 1;
+      hints = max(hints, 10);
+      displayMistakesAndHints();
+      return;
     }
   }
 };
 setRaise(discard);
-hints.appendChild(discard);
+buttons.appendChild(discard);
+
+var tokensDiv = document.createElement("div");
+tokensDiv.style.display = "inline-block";
+buttons.appendChild(tokensDiv);
 
 var COLORS = ["blue", "white", "green", "yellow", "red"];
 var COLOR_HEX = {
@@ -121,6 +159,10 @@ var BUTTONS_STYLE = {
   "box-shadow": "5px 5px 3px lightgray",
 };
 
+var dataDiv = document.createElement("div");
+setStyle(dataDiv, { "display": "flex", });
+
+var buttonsDiv = document.createElement("div");
 // Color buttons.
 var buttons = document.createElement("div");
 buttons.style.display = "flex";
@@ -134,7 +176,7 @@ for (let color of COLORS) {
   setRaise(div);
   buttons.appendChild(div);
 }
-hints.appendChild(buttons);
+buttonsDiv.appendChild(buttons);
 console.log("added buttons")
 
 // Numbers.
@@ -150,7 +192,9 @@ for (let i = 1; i <= 5; i++) {
   setRaise(div);
   numbers.appendChild(div);
 }
-hints.appendChild(numbers);
+buttonsDiv.appendChild(numbers);
+dataDiv.appendChild(buttonsDiv);
+hints.appendChild(dataDiv);
 
 
 // Cards.
@@ -159,10 +203,11 @@ var CARD_HEIGHT=CARD_WIDTH * 1.25;
 
 function displayCard(card) {
   if (card.selected) {
-    card.div.style.backgroundColor = "gray";
+    card.div.style.filter = "saturate(200%) brightness(80%)";
   } else {
-    card.div.style.backgroundColor = COLOR_HEX[card.color] ?? "lightgray";
+    card.div.style.filter = "";
   }
+  card.div.style.backgroundColor = COLOR_HEX[card.color] ?? "lightgray";
   if (card.number) {
     card.div.innerHTML = `<h1 style="text-align: center"> ${card.number} </h1>`;
   } else {
@@ -171,9 +216,17 @@ function displayCard(card) {
 }
 
 var players = []
+var playersDiv = document.createElement("div");
+playersDiv.id = "playersDiv";
+playersDiv.style.display = "flex";
+playersDiv.style.width = "100%";
+playersDiv.style.flexWrap = "wrap";
+playersDiv.style.maxWidth = "960px";
 for (var i = 0; i < 4; i++) {
+  var playerDiv = document.createElement("div");
   var handDiv = document.createElement("div");
   handDiv.style.display = "flex";
+  handDiv.style.flexDirection = "column";
 
   var container = document.createElement("div");
   container.style.display = "flex";
@@ -210,15 +263,19 @@ for (var i = 0; i < 4; i++) {
   var playerName = document.createElement("input");
   setStyle(playerName, {"font-size": "22px", "margin-left": "10px", border: "none", });
   playerName.value = `Player ${i}`;
-  hints.appendChild(playerName);
-  hints.appendChild(handDiv);
+  playerDiv.appendChild(playerName);
+  playerDiv.appendChild(handDiv);
+  playersDiv.appendChild(playerDiv);
 }
+hints.appendChild(playersDiv);
 screen.appendChild(hints);
 
 
 // Start of actual game.
 var CARD_AMOUNT = [3, 2, 2, 2, 1];
 var deck = [];
+var mistakes = 3;
+var hints = 10;
 for (var c of COLORS) {
   for (var i = 0; i < 5; i++) {
     for (var a = 0; a < CARD_AMOUNT[i]; a++) {
@@ -270,5 +327,51 @@ for (let player of players) {
   player.handDiv.appendChild(container);
 }
 screen.appendChild(game);
+
+var completedDiv = document.createElement("div");
+setStyle(completedDiv, {
+  display: "flex",
+  margin: "10px",
+  gap: "10px",
+});
+
+var completed = {}
+for (let i = 0; i < 5; i++) {
+  var div = document.createElement("div");
+  let card = {div: div, color: COLORS[i], number: 0};
+  setStyle(div, {
+    width: `${CARD_WIDTH}px`,
+    height: `${CARD_HEIGHT}px`,
+    border: "solid 3px black",
+    "background-color": "lightgray",
+    "border-radius": "5px",
+    "box-shadow": "5px 5px 3px lightgray",
+  });
+  completed[card.color] = card;
+  displayCard(card);
+  completedDiv.appendChild(div);
+}
+dataDiv.appendChild(completedDiv);
+
+function displayMistakesAndHints() {
+  tokensDiv.textContent = ""
+  var mistakesDiv = document.createElement("div");
+  setStyle(mistakesDiv, { display: "flex", gap: "10px", margin: 10});
+  for (var i = 0; i < mistakes; i++) {
+    var d = document.createElement("div");
+    setStyle(d, { width: 30, height: 30, "border-radius": "30px", "background-color": COLOR_HEX["red"]});
+    mistakesDiv.append(d);
+  }
+  var hintsDiv = document.createElement("div");
+  setStyle(hintsDiv, { display: "flex", gap: "10px", margin: 10});
+  for (var i = 0; i < hints; i++) {
+    var d = document.createElement("div");
+    setStyle(d, { width: 30, height: 30, "border-radius": "30px", "background-color": COLOR_HEX["blue"]});
+    hintsDiv.append(d);
+  }
+  tokensDiv.appendChild(mistakesDiv);
+  tokensDiv.appendChild(hintsDiv);
+}
+displayMistakesAndHints();
 
 document.body.appendChild(screen);
