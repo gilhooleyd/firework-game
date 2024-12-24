@@ -1,3 +1,9 @@
+const patch = snabbdom.init([
+  snabbdom_style.styleModule,
+]);
+const h = snabbdom.h;
+const toVNode = tovnode.toVNode;
+
 function max(a, b) { return a < b ? a : b}
 
 function setStyle(div, styles) {
@@ -9,12 +15,12 @@ function setStyle(div, styles) {
 function setRaise(div, player) {
   div.style.transition = "transform .1s ease-out";
   div.onmouseover = function() {
-    if (player == null || player != currentPlayer) {
+    if (player == null || player != data.currentPlayer) {
       div.style.transform = "translate(0, -5px)";
     }
   }
   div.onmouseout = function() {
-    if (player == null || player != currentPlayer) {
+    if (player == null || player != data.currentPlayer) {
       div.style.transform = "";
     }
   }
@@ -33,14 +39,14 @@ function createKey() {
 // Buttons.
 function colorOnClick(color) {
   console.log("Clicked", color);
-  if (madeMove) return;
-  for (var p of players) {
+  if (data.madeMove) return;
+  for (var p of data.players) {
     for (var c of p.cards) {
       if (!c.selected) continue;
       c.color = color;
       c.selected = false;
       displayCard(c);
-      madeMove = true;
+      data.madeMove = true;
 
       data.hints -= 1;
       displayMistakesAndHints();
@@ -50,14 +56,14 @@ function colorOnClick(color) {
 
 function numberOnClick(number) {
   console.log("Clicked", number);
-  if (madeMove) return;
-  for (var p of players) {
+  if (data.madeMove) return;
+  for (var p of data.players) {
     for (let c of p.cards) {
       if (!c.selected) continue;
       c.number = number;
       c.selected = false;
       displayCard(c);
-      madeMove = true;
+      data.madeMove = true;
 
       data.hints -= 1;
       displayMistakesAndHints();
@@ -86,8 +92,8 @@ setStyle(play, {
   "box-shadow": "5px 5px 3px lightgray",
 });
 play.onclick = function() {
-  if (madeMove) return;
-  for (var p of players) {
+  if (data.madeMove) return;
+  for (var p of data.players) {
     for (let [i, c] of p.cards.entries()) {
       if (!c.selected) continue;
       let actual = p.actual_hand[i];
@@ -98,7 +104,7 @@ play.onclick = function() {
         data.mistakes -= 1;
         displayMistakesAndHints();
       }
-      var new_card = deck.pop();
+      var new_card = data.deck.pop();
       actual.color = new_card.color;
       actual.number = new_card.number;
       displayCardNotCurrentPlayer(actual, p.id);
@@ -107,7 +113,7 @@ play.onclick = function() {
       c.color = null;
       c.selected = false;
       displayCard(c);
-      madeMove = true;
+      data.madeMove = true;
 
       return;
     }
@@ -129,13 +135,13 @@ setStyle(discard, {
   "box-shadow": "5px 5px 3px lightgray",
 });
 discard.onclick = function() {
-  if (madeMove) return;
-  for (var p of players) {
+  if (data.madeMove) return;
+  for (var p of data.players) {
     for (let [i, c] of p.cards.entries()) {
       if (!c.selected) continue;
 
       let actual = p.actual_hand[i];
-      var new_card = deck.pop();
+      var new_card = data.deck.pop();
       actual.color = new_card.color;
       actual.number = new_card.number;
       displayCardNotCurrentPlayer(actual, p.id);
@@ -147,7 +153,7 @@ discard.onclick = function() {
 
       hints += 1;
       hints = max(hints, 10);
-      madeMove = true;
+      data.madeMove = true;
       displayMistakesAndHints();
       return;
     }
@@ -168,20 +174,26 @@ setStyle(endDiv, {
   "box-shadow": "5px 5px 3px lightgray",
 });
 endDiv.onclick = function() {
-  if (!madeMove) return;
-  currentPlayer += 1;
-  if (currentPlayer >= players.length) { currentPlayer = 0;}
-  for (var p of players) {
+  if (!data.madeMove) return;
+  data.currentPlayer += 1;
+  if (data.currentPlayer >= data.players.length) { data.currentPlayer = 0;}
+  for (var p of data.players) {
     for (var c of p.actual_hand) {
       displayCardNotCurrentPlayer(c, p.id);
     }
   }
-  privacyPlayer.innerText = `Start ${players[currentPlayer].name}'s Turn`;
+  privacyPlayer.innerText = `Start ${data.players[data.currentPlayer].name}'s Turn`;
   privacyDiv.style.display = "";
-  madeMove = false;
+  data.madeMove = false;
 };
 setRaise(endDiv);
 buttons.appendChild(endDiv);
+
+var tokensDiv = document.createElement("div");
+tokensDiv.id = "tokens";
+tokensDiv.style.display = "inline-block";
+buttons.appendChild(tokensDiv);
+tokensDiv = toVNode(tokensDiv);
 
 var privacyDiv = document.createElement("div");
 setStyle(privacyDiv, {
@@ -214,11 +226,11 @@ setStyle(startDiv, {
   "background-color": "lightgray",
   "text-align": "center",
 });
-var playerNames = [];
+var playerNames = ["David", "Laurel", "Player Name", "Player Name"];
 {
   for (var i = 0; i < 4; i++) {
     var n = document.createElement("input");
-    n.value = "Player Name";
+    n.value = playerNames[i];
     n.classList.add("player-name");
     startDiv.appendChild(n);
   }
@@ -238,12 +250,6 @@ var playerNames = [];
   startDiv.appendChild(privacyButton);
 }
 buttons.appendChild(startDiv);
-
-
-
-var tokensDiv = document.createElement("div");
-tokensDiv.style.display = "inline-block";
-buttons.appendChild(tokensDiv);
 
 var COLORS = ["blue", "white", "green", "yellow", "red"];
 var COLOR_HEX = {
@@ -318,7 +324,7 @@ function displayCard(card) {
 }
 
 function displayCardNotCurrentPlayer(card, player) {
-  if (player == currentPlayer) {
+  if (player == data.currentPlayer) {
     card.div.innerHTML = "";
     card.div.style.backgroundColor = "black";
   } else {
@@ -326,9 +332,6 @@ function displayCardNotCurrentPlayer(card, player) {
   }
 }
 
-var players = []
-var currentPlayer = 0;
-var madeMove = false;
 var playersDiv = document.createElement("div");
 playersDiv.id = "playersDiv";
 playersDiv.style.display = "flex";
@@ -372,7 +375,7 @@ function createPlayersDiv() {
     handDiv.appendChild(container);
 
     player.handDiv = handDiv
-    players.push(player);
+    data.players.push(player);
     var playerName = document.createElement("input");
     setStyle(playerName, {"font-size": "22px", "margin-left": "10px", border: "none", });
     playerName.value = player.name;
@@ -387,15 +390,18 @@ screen.appendChild(hints);
 
 // Start of actual game.
 var CARD_AMOUNT = [3, 2, 2, 2, 1];
-var deck = [];
 var data = {
   hints: 10,
   mistakes: 3,
+  deck: [],
+  players: [],
+  currentPlayer: 0,
+  madeMove: false,
 };
 for (var c of COLORS) {
   for (var i = 0; i < 5; i++) {
     for (var a = 0; a < CARD_AMOUNT[i]; a++) {
-      deck.push({ color: c, number: i + 1});
+      data.deck.push({ color: c, number: i + 1});
     }
   }
 }
@@ -407,18 +413,18 @@ function shuffle(array) {
   }
   return array;
 }
-deck = shuffle(deck);
+data.deck = shuffle(data.deck);
 var game = document.createElement("div");
 
 function createActualDivs() {
-  for (var p of players) {
+  for (var p of data.players) {
     p.actual_hand = [];
     for (var i = 0; i < 5; i++) {
-      p.actual_hand.push(deck.pop());
+      p.actual_hand.push(data.deck.pop());
     }
   }
 
-  for (let player of players) {
+  for (let player of data.players) {
     var container = document.createElement("div");
     container.style.display = "flex";
     container.style.margin = "10px";
@@ -471,25 +477,50 @@ for (let i = 0; i < 5; i++) {
 }
 dataDiv.appendChild(completedDiv);
 
+console.log("AH");
 function displayMistakesAndHints() {
-  tokensDiv.textContent = ""
-  var mistakesDiv = document.createElement("div");
-  setStyle(mistakesDiv, { display: "flex", gap: "10px", margin: 10});
+  var mistakesChildren = []
   for (var i = 0; i < data.mistakes; i++) {
-    var d = document.createElement("div");
-    setStyle(d, { width: 30, height: 30, "border-radius": "30px", "background-color": COLOR_HEX["red"]});
-    mistakesDiv.append(d);
+    mistakesChildren.push(h("div", {
+      style: {
+        width: 30,
+        height: 30,
+        "border-radius": "30px",
+        "background-color": COLOR_HEX["red"],
+      }
+    }));
   }
-  var hintsDiv = document.createElement("div");
-  setStyle(hintsDiv, { display: "flex", gap: "10px", margin: 10});
+  var mistakes = h("div", {
+    style: {
+      display: "flex",
+    },
+  }, mistakesChildren);
+
+  var hintsChildren = []
   for (var i = 0; i < data.hints; i++) {
-    var d = document.createElement("div");
-    setStyle(d, { width: 30, height: 30, "border-radius": "30px", "background-color": COLOR_HEX["blue"]});
-    hintsDiv.append(d);
+    hintsChildren.push(h("div", {
+      style: {
+        width: 30,
+        height: 30,
+        "border-radius": "30px",
+        "background-color": COLOR_HEX["blue"],
+      }
+    }));
   }
-  tokensDiv.appendChild(mistakesDiv);
-  tokensDiv.appendChild(hintsDiv);
+  var hints = h("div", {
+    style: {
+        display: "flex",
+    },
+  }, hintsChildren);
+  var mistakesAndHints = h("div#tokens", {
+    style: {
+      gap: "10px",
+      margin: 10,
+    },
+  }, [mistakes, hints]);
+  patch(tokensDiv, mistakesAndHints);
 }
+
 displayMistakesAndHints();
 
 document.body.appendChild(screen);
