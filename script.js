@@ -6,13 +6,17 @@ function setStyle(div, styles) {
   }
 }
 
-function setRaise(div) {
+function setRaise(div, player) {
   div.style.transition = "transform .1s ease-out";
   div.onmouseover = function() {
-    div.style.transform = "translate(0, -5px)";
+    if (player == null || player != currentPlayer) {
+      div.style.transform = "translate(0, -5px)";
+    }
   }
   div.onmouseout = function() {
-    div.style.transform = "";
+    if (player == null || player != currentPlayer) {
+      div.style.transform = "";
+    }
   }
 }
 
@@ -29,12 +33,14 @@ function createKey() {
 // Buttons.
 function colorOnClick(color) {
   console.log("Clicked", color);
+  if (madeMove) return;
   for (var p of players) {
     for (var c of p.cards) {
       if (!c.selected) continue;
       c.color = color;
       c.selected = false;
       displayCard(c);
+      madeMove = true;
 
       data.hints -= 1;
       displayMistakesAndHints();
@@ -44,12 +50,14 @@ function colorOnClick(color) {
 
 function numberOnClick(number) {
   console.log("Clicked", number);
+  if (madeMove) return;
   for (var p of players) {
     for (let c of p.cards) {
       if (!c.selected) continue;
       c.number = number;
       c.selected = false;
       displayCard(c);
+      madeMove = true;
 
       data.hints -= 1;
       displayMistakesAndHints();
@@ -78,6 +86,7 @@ setStyle(play, {
   "box-shadow": "5px 5px 3px lightgray",
 });
 play.onclick = function() {
+  if (madeMove) return;
   for (var p of players) {
     for (let [i, c] of p.cards.entries()) {
       if (!c.selected) continue;
@@ -98,6 +107,7 @@ play.onclick = function() {
       c.color = null;
       c.selected = false;
       displayCard(c);
+      madeMove = true;
 
       return;
     }
@@ -119,6 +129,7 @@ setStyle(discard, {
   "box-shadow": "5px 5px 3px lightgray",
 });
 discard.onclick = function() {
+  if (madeMove) return;
   for (var p of players) {
     for (let [i, c] of p.cards.entries()) {
       if (!c.selected) continue;
@@ -136,6 +147,7 @@ discard.onclick = function() {
 
       hints += 1;
       hints = max(hints, 10);
+      madeMove = true;
       displayMistakesAndHints();
       return;
     }
@@ -156,6 +168,7 @@ setStyle(endDiv, {
   "box-shadow": "5px 5px 3px lightgray",
 });
 endDiv.onclick = function() {
+  if (!madeMove) return;
   currentPlayer += 1;
   if (currentPlayer >= players.length) { currentPlayer = 0;}
   for (var p of players) {
@@ -165,6 +178,7 @@ endDiv.onclick = function() {
   }
   privacyPlayer.innerText = `Start ${players[currentPlayer].name}'s Turn`;
   privacyDiv.style.display = "";
+  madeMove = false;
 };
 setRaise(endDiv);
 buttons.appendChild(endDiv);
@@ -314,6 +328,7 @@ function displayCardNotCurrentPlayer(card, player) {
 
 var players = []
 var currentPlayer = 0;
+var madeMove = false;
 var playersDiv = document.createElement("div");
 playersDiv.id = "playersDiv";
 playersDiv.style.display = "flex";
@@ -331,7 +346,7 @@ function createPlayersDiv() {
     container.style.display = "flex";
     container.style.margin = "10px";
     container.style.gap = "10px";
-    var player = { id: i, cards: [], name: playerNames[i]};
+    let player = { id: i, cards: [], name: playerNames[i]};
 
     for (var c = 0; c < 5; c++) {
       let div = document.createElement("div");
