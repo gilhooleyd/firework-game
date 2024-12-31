@@ -31,7 +31,7 @@ function startOnClick() {
     }
     data.players.push(player);
   }
-  updateDOM();
+  updateData();
 }
 
 function colorOnClick(color) {
@@ -49,7 +49,7 @@ function colorOnClick(color) {
     return;
   }
   data.hints -= 1;
-  updateDOM();
+  updateData();
 }
 
 function numberOnClick(number) {
@@ -67,7 +67,7 @@ function numberOnClick(number) {
     return;
   }
   data.hints -= 1;
-  updateDOM();
+  updateData();
 }
 
 function playButtonOnclick() {
@@ -89,7 +89,7 @@ function playButtonOnclick() {
       c.color = null;
       c.selected = false;
       data.madeMove = true;
-      updateDOM();
+      updateData();
 
       return;
     }
@@ -114,7 +114,7 @@ function discardButtonOnclick() {
       data.hints += 1;
       data.hints = max(data.hints, 10);
       data.madeMove = true;
-      updateDOM();
+      updateData();
       return;
     }
   }
@@ -127,7 +127,7 @@ function endButtonOnclick() {
   if (data.currentPlayer >= data.players.length) { data.currentPlayer = 0;}
   data.displayPrivacy = true;
   data.madeMove = false;
-  updateDOM();
+  updateData();
 };
 
 var COLORS = ["blue", "white", "green", "yellow", "red"];
@@ -270,7 +270,7 @@ function makeButtonDiv() {
     on: {
       click: function() {
         data.displayPrivacy = false;
-        updateDOM();
+        updateData();
       }
     },
     }, [h("h1", `Start ${currentPlayer ?? "Test"}'s Turn`)])
@@ -424,7 +424,7 @@ function createPlayersDiv() {
             console.log("Pushed!");
             card.selected = !card.selected;
             console.log(card);
-            updateDOM();
+            updateData();
           },
           mouseover: mouseOverRaise,
           mouseout: mouseOutRaise,
@@ -495,5 +495,5 @@ function createPlayersDiv() {
   return players;
 }
 
-updateDOM();
+startUpdates();
 
