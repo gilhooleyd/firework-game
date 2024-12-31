@@ -1,11 +1,30 @@
-<head></head>
+<head>
+  <script type="module">
+    import {
+    init,
+    classModule,
+    propsModule,
+    styleModule,
+    attributesModule,
+    eventListenersModule,
+    h,
+    toVNode,
+  } from 'https://cdn.jsdelivr.net/npm/snabbdom@3.6.2/+esm';
+    window["patch"] = init([
+      attributesModule,
+      classModule,
+      propsModule,
+      styleModule,
+      eventListenersModule,
+    ]);
+    window["h"] = h;
+    window["toVNode"] = toVNode;
+
+    var script = document.createElement("script");
+    script.src = "script.js";
+    document.head.appendChild(script);
+  </script>
+</head>
 <body>
   <div class="container"></div>
 </body>
-<script type="text/javascript" src="snabbdom/tovnode.js"></script>
-<script type="text/javascript" src="snabbdom/snabbdom-class.js"></script>
-<script type="text/javascript" src="snabbdom/snabbdom-style.js"></script>
-<script type="text/javascript" src="snabbdom/snabbdom-attributes.js"></script>
-<script type="text/javascript" src="snabbdom/snabbdom-eventlisteners.js"></script>
-<script type="text/javascript" src="snabbdom/snabbdom.js"></script>
-<script type="text/javascript" src="script.js"></script>

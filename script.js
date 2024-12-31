@@ -1,13 +1,5 @@
 "use strict";
 
-const patch = snabbdom.init([
-  snabbdom_style.styleModule,
-  snabbdom_attributes.attributesModule,
-  snabbdom_eventlisteners.eventListenersModule,
-]);
-const h = snabbdom.h;
-const toVNode = tovnode.toVNode;
-
 var buttonsVnode = document.createElement("div");
 document.body.appendChild(buttonsVnode);
 buttonsVnode = toVNode(buttonsVnode);
