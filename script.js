@@ -8,13 +8,11 @@ const patch = snabbdom.init([
 const h = snabbdom.h;
 const toVNode = tovnode.toVNode;
 
-function max(a, b) { return a < b ? a : b}
+var buttonsVnode = document.createElement("div");
+document.body.appendChild(buttonsVnode);
+buttonsVnode = toVNode(buttonsVnode);
 
-function setStyle(div, styles) {
-  for (var key in styles) {
-    div.style.setProperty(key, styles[key]);
-  }
-}
+function max(a, b) { return a < b ? a : b}
 
 function mouseOverRaise(e) {
   e.currentTarget.style.transform = "translate(0, -5px)";
@@ -24,17 +22,26 @@ function mouseOutRaise(e) {
   e.currentTarget.style.transform = "";
 }
 
-function createKey() {
-  var key = document.createElement("div");
-  setStyle(key, {
-    width: 75,
-    height: 75,
-    border: "solid 3px black",
-  });
-  return key;
+// Buttons.
+function startOnClick() {
+  data.displayStart = false;
+  data.displayPrivacy = true;
+  var i = 0
+  for (var c of document.getElementsByClassName("player-name")) {
+    data.playerNames[i++] = c.value;
+  }
+  for (var i = 0; i < data.playerNames.length; i++) {
+    if (data.playerNames[i] == "Player Name") { continue;}
+    let player = { id: i, cards: [], actual_hand: [], name: data.playerNames[i] };
+    for (var c = 0; c < 5; c++) {
+      player.cards.push({selected: false});
+      player.actual_hand.push(data.deck.pop());
+    }
+    data.players.push(player);
+  }
+  updateDOM();
 }
 
-// Buttons.
 function colorOnClick(color) {
   console.log("Clicked", color);
   if (data.madeMove) return;
@@ -70,12 +77,6 @@ function numberOnClick(number) {
   data.hints -= 1;
   updateDOM();
 }
-
-var buttonsVnode = document.createElement("div");
-setStyle(buttonsVnode, {display: "flex"});
-buttonsVnode.id = "buttons";
-document.body.appendChild(buttonsVnode);
-buttonsVnode = toVNode(buttonsVnode);
 
 function playButtonOnclick() {
   if (data.madeMove) return;
@@ -127,17 +128,6 @@ function discardButtonOnclick() {
   }
 };
 
-var endDiv = document.createElement("div");
-endDiv.innerHTML = `<h1 style="text-align: center"> End Turn </h1>`;
-setStyle(endDiv, {
-  display: "inline-block",
-  border: "solid 3px black",
-  width: 150,
-  height: 75,
-  margin: 10,
-  "border-radius": "5px",
-  "box-shadow": "5px 5px 3px lightgray",
-});
 function endButtonOnclick() {
   console.log("End on click");
   if (!data.madeMove) return;
@@ -171,29 +161,6 @@ function BUTTONS_STYLE(background_color) { return {
 
 // Start of actual game.
 var CARD_AMOUNT = [3, 2, 2, 2, 1];
-var data = {
-  hints: 10,
-  mistakes: 3,
-  deck: [],
-  players: [],
-  playerNames: ["David", "Laurel", "Player Name", "Player Name"],
-  currentPlayer: 0,
-  madeMove: false,
-  displayPrivacy: true,
-  displayStart: true,
-  completed: {},
-};
-for (var c of COLORS) {
-  for (var i = 0; i < 5; i++) {
-    for (var a = 0; a < CARD_AMOUNT[i]; a++) {
-      data.deck.push({ color: c, number: i + 1});
-    }
-  }
-}
-for (let i = 0; i < 5; i++) {
-    let card = {color: COLORS[i], number: 0};
-    data.completed[card.color] = 0;
-}
 
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -202,7 +169,36 @@ function shuffle(array) {
   }
   return array;
 }
-data.deck = shuffle(data.deck);
+
+function createData() {
+  var data = {
+    hints: 10,
+    mistakes: 3,
+    deck: [],
+    players: [],
+    playerNames: ["David", "Laurel", "Player Name", "Player Name"],
+    currentPlayer: 0,
+    madeMove: false,
+    displayPrivacy: true,
+    displayStart: true,
+    completed: {},
+  };
+  for (var c of COLORS) {
+    for (var i = 0; i < 5; i++) {
+      for (var a = 0; a < CARD_AMOUNT[i]; a++) {
+        data.deck.push({ color: c, number: i + 1});
+      }
+    }
+  }
+  for (let i = 0; i < 5; i++) {
+    let card = {color: COLORS[i], number: 0};
+    data.completed[card.color] = 0;
+  }
+  data.deck = shuffle(data.deck);
+  return data;
+}
+
+var data = createData();
 
 function updateDOM() {
   buttonsVnode = patch(buttonsVnode,
@@ -211,7 +207,6 @@ function updateDOM() {
 }
 
 function makeButtonDiv() {
-  // TODO: Needs raise attributes.
   var play = h("div.play", {
     on: {
       click: playButtonOnclick,
@@ -295,25 +290,7 @@ function makeButtonDiv() {
       { attrs: { value: data.playerNames[i]}}));
   }
   startChildren.push(h("button", { 
-    on: {
-      click: function() {
-        data.displayStart = false;
-        data.displayPrivacy = true;
-        var i = 0
-        for (var c of document.getElementsByClassName("player-name")) {
-          data.playerNames[i++] = c.value;
-        }
-        for (var i = 0; i < data.playerNames.length; i++) {
-          let player = { id: i, cards: [], actual_hand: [], name: data.playerNames[i] };
-          for (var c = 0; c < 5; c++) {
-            player.cards.push({selected: false});
-            player.actual_hand.push(data.deck.pop());
-          }
-          data.players.push(player);
-        }
-        updateDOM();
-      },
-    },
+    on: {click: startOnClick},
   }, [h("h1", "Start")]));
 
   var start = h("div.start", {
@@ -414,7 +391,7 @@ function createButtonsDiv() {
       gap: "10px",
       margin: "10px",
     }}, numbersChildren);
-  return h("div", [numbers, buttons]);
+  return h("div", {style: { display: "inline-block",}}, [numbers, buttons]);
 }
 
 function createCompletedDiv() {
@@ -432,7 +409,7 @@ function createCompletedDiv() {
     }, [h("h1", `${num == 0 ? "" : num}`)]));
   }
   return h("div", { style: {
-      display: "flex",
+      display: "inline-flex",
       margin: "10px",
       gap: "10px",
     }}, cards);
@@ -516,7 +493,7 @@ function createPlayersDiv() {
   var players = h("div", 
     { style: { 
       display: "flex",
-      "flex-direction": "column",
+      "flex-direction": "row",
       width : "100%",
       flexWrap : "wrap",
       maxWidth : "960px",
