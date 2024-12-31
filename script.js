@@ -18,10 +18,6 @@ function mouseOutRaise(e) {
 function startOnClick() {
   data.displayStart = false;
   data.displayPrivacy = true;
-  var i = 0
-  for (var c of document.getElementsByClassName("player-name")) {
-    data.playerNames[i++] = c.value;
-  }
   for (var i = 0; i < data.playerNames.length; i++) {
     if (data.playerNames[i] == "Player Name") { continue;}
     let player = { id: i, cards: [], actual_hand: [], name: data.playerNames[i] };
@@ -31,6 +27,13 @@ function startOnClick() {
     }
     data.players.push(player);
   }
+  updateData();
+}
+
+function addPlayer() {
+  var name = document.getElementsByClassName("player-name")[0].value;
+  data.playerNames.push(name);
+  local.playerNames.push(name);
   updateData();
 }
 
@@ -168,7 +171,7 @@ function createData() {
     mistakes: 3,
     deck: [],
     players: [],
-    playerNames: ["David", "Laurel", "Player Name", "Player Name"],
+    playerNames: [],
     currentPlayer: 0,
     madeMove: false,
     displayPrivacy: true,
@@ -191,11 +194,20 @@ function createData() {
 }
 
 var data = createData();
+var local = {
+  playerNames: [],
+  currentPlayer: 0,
+};
 
 function updateDOM() {
-  buttonsVnode = patch(buttonsVnode,
-    h("div.app", [makeButtonDiv(), createButtonsDiv(),
-      createCompletedDiv(), createPlayersDiv()]));
+  var turn = h("h1", `${data.playerNames[data.currentPlayer]}'s Turn`);
+  buttonsVnode = patch(buttonsVnode, h("div.app", [
+      turn,
+      makeButtonDiv(),
+      createButtonsDiv(),
+      createCompletedDiv(),
+      createPlayersDiv()
+    ]));
 }
 
 function makeButtonDiv() {
@@ -276,14 +288,31 @@ function makeButtonDiv() {
     }, [h("h1", `Start ${currentPlayer ?? "Test"}'s Turn`)])
   ]);
 
+  return h("div#buttons", { style: { display: "flex"}}, 
+    [play, discard, end, privacy, makeStart(), makeMistakesAndHints()]);
+}
+
+function makeStart() {
   var startChildren = []
-  for (var i = 0; i < 4; i++) {
-    startChildren.push(h("input.player-name",
-      { attrs: { value: data.playerNames[i]}}));
-  }
+
   startChildren.push(h("button", { 
     on: {click: startOnClick},
   }, [h("h1", "Start")]));
+
+  var playersText = "Players: ";
+  if (data.playerNames.length > 0) {
+    for (var i = 0; i < data.playerNames.length - 1; i++) {
+      playersText += `${data.playerNames[i]}, `;
+    }
+    playersText += data.playerNames[data.playerNames.length -1];
+  }
+  startChildren.push(h("h2", playersText));
+
+  startChildren.push(h("input.player-name",
+      { attrs: { value: data.playerNames[i]}}));
+  startChildren.push(h("button", { 
+    on: {click: addPlayer},
+  }, [h("h2", "Add Player")]));
 
   var start = h("div.start", {
     key: 1,
@@ -298,9 +327,7 @@ function makeButtonDiv() {
       "text-align": "center",
     },
   }, startChildren);
-
-  return h("div#buttons", { style: { display: "flex"}}, 
-    [play, discard, end, privacy, start, makeMistakesAndHints()]);
+  return start;
 }
 
 function makeMistakesAndHints() {
@@ -408,6 +435,10 @@ function createCompletedDiv() {
 }
 
 function createPlayersDiv() {
+  let currentPlayer = data.currentPlayer;
+  if (!local.playerNames.includes(data.playerNames[currentPlayer])) {
+    currentPlayer = data.playerNames.indexOf(local.playerNames[local.currentPlayer]);
+  }
   var playerChildren = [];
   for (var i = 0; i < data.players.length; i++) {
     var cards = [];
@@ -453,7 +484,7 @@ function createPlayersDiv() {
       var card = data.players[i].actual_hand[c];
       var background = COLOR_HEX[card.color] ?? "lightgray";
       var innerCard = h("h1", { style: { "text-align": "center"}}, card.number);
-      if (i == data.currentPlayer) {
+      if (i == currentPlayer) {
         background = "black";
         innerCard = h("!");
       } 

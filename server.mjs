@@ -19,7 +19,7 @@ function createData() {
     mistakes: 3,
     deck: [],
     players: [],
-    playerNames: ["David", "Laurel", "Player Name", "Player Name"],
+    playerNames: [],
     currentPlayer: 0,
     madeMove: false,
     displayPrivacy: true,

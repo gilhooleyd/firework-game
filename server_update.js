@@ -6,7 +6,6 @@ function postRequest(url, data, callback) {
   xhr.setRequestHeader("Content-Type", "application/json");
   xhr.onreadystatechange = function () {
     if (xhr.readyState === 4 && xhr.status === 200) {
-      console.log("Got: " + this.responseText)
       callback(JSON.parse(this.responseText));
     }
   };
@@ -16,7 +15,6 @@ function postRequest(url, data, callback) {
 var first = true;
 function startUpdates() {
   postRequest("get", { first: first, }, function(d) {
-    console.log("Returned get", d);
     data = d;
     updateDOM();
     startUpdates();
