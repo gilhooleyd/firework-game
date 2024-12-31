@@ -116,7 +116,7 @@ http.createServer(function (req, res) {
     let data = "";
     req.on('data', function (chunk) { data += chunk }).on('end', function () {
       game = JSON.parse(data);
-      res.end("");
+      res.end("{}");
       while (poll_res.length != 0) {
         res = poll_res.pop();
         res.end(JSON.stringify(game));

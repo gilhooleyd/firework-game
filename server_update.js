@@ -6,7 +6,9 @@ function postRequest(url, data, callback) {
   xhr.setRequestHeader("Content-Type", "application/json");
   xhr.onreadystatechange = function () {
     if (xhr.readyState === 4 && xhr.status === 200) {
-      callback(JSON.parse(this.responseText));
+      if (callback) {
+        callback(JSON.parse(this.responseText));
+      }
     }
   };
   xhr.send(JSON.stringify(data));

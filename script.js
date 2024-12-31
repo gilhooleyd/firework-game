@@ -17,7 +17,6 @@ function mouseOutRaise(e) {
 // Buttons.
 function startOnClick() {
   data.displayStart = false;
-  data.displayPrivacy = true;
   for (var i = 0; i < data.playerNames.length; i++) {
     if (data.playerNames[i] == "Player Name") { continue;}
     let player = { id: i, cards: [], actual_hand: [], name: data.playerNames[i] };
@@ -33,6 +32,9 @@ function startOnClick() {
 function addPlayer() {
   var name = document.getElementsByClassName("player-name")[0].value;
   data.playerNames.push(name);
+  if (local.playerNames.length == 0) {
+    local.currentPlayer = data.playerNames.length - 1;
+  }
   local.playerNames.push(name);
   updateData();
 }
@@ -128,7 +130,13 @@ function endButtonOnclick() {
   if (!data.madeMove) return;
   data.currentPlayer += 1;
   if (data.currentPlayer >= data.players.length) { data.currentPlayer = 0;}
-  data.displayPrivacy = true;
+
+  let lcp = localCurrentPlayer();
+  if (lcp != local.currentPlayer) {
+    local.currentPlayer = lcp;
+    local.displayPrivacy = true;
+  }
+
   data.madeMove = false;
   updateData();
 };
@@ -194,10 +202,20 @@ function createData() {
 }
 
 var data = createData();
+
 var local = {
   playerNames: [],
   currentPlayer: 0,
+  displayPrivacy: false,
 };
+
+function localCurrentPlayer() {
+  let currentPlayer = data.currentPlayer;
+  if (!local.playerNames.includes(data.playerNames[currentPlayer])) {
+    currentPlayer = data.playerNames.indexOf(data.playerNames[local.currentPlayer]);
+  }
+  return currentPlayer;
+}
 
 function updateDOM() {
   var turn = h("h1", `${data.playerNames[data.currentPlayer]}'s Turn`);
@@ -268,7 +286,7 @@ function makeButtonDiv() {
   var currentPlayer = data.playerNames[data.currentPlayer];
   var privacy = h("div.privacy", {
     style: {
-      display: data.displayPrivacy ? "" : "none",
+      display: local.displayPrivacy ? "" : "none",
       position: "absolute",
       width: "100%",
       height: "100%",
@@ -281,8 +299,8 @@ function makeButtonDiv() {
     h("button", {
     on: {
       click: function() {
-        data.displayPrivacy = false;
-        updateData();
+        local.displayPrivacy = false;
+        updateDOM();
       }
     },
     }, [h("h1", `Start ${currentPlayer ?? "Test"}'s Turn`)])
@@ -435,10 +453,8 @@ function createCompletedDiv() {
 }
 
 function createPlayersDiv() {
-  let currentPlayer = data.currentPlayer;
-  if (!local.playerNames.includes(data.playerNames[currentPlayer])) {
-    currentPlayer = data.playerNames.indexOf(local.playerNames[local.currentPlayer]);
-  }
+  let currentPlayer = localCurrentPlayer();
+
   var playerChildren = [];
   for (var i = 0; i < data.players.length; i++) {
     var cards = [];
